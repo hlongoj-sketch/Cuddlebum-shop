@@ -1,1 +1,17 @@
-echo "# Cuddlebum-shop" >> README.md && git init && git add . && git commit -m "initial commit" && git branch -M main && git remote add origin https://github.com/hlongoj-sketch/Cuddlebum-shop.git && git push -u origin main
+ 🍼 Cuddlebum Shop
+
+Welcome to **Cuddlebum Shop** – your trusted online store for **affordable, high-quality nappies**.  
+This repository contains the source code and assets for the Cuddlebum e-commerce website.
+
+
+
+
+🛒 Easy-to-use online shop for nappies
+📱 Fully responsive (works on mobile, tablet, desktop)
+💬 WhatsApp chat integration for instant support
+📧 Newsletter signup to stay updated
+ ⚡ Lightweight and fast (HTML + CSS + JavaScript)
+
+
+
+📂 Project Structure
