@@ -1,0 +1,107 @@
+import React, { useMemo, useState, useEffect } from "react";
+
+// === Store Settings ===
+const STORE = {
+  name: "Cuddlebum",
+  tagline: "Soft. Secure. South African.",
+  ownerWhatsApp: "+27653450713",
+  supportEmail: "hlongoj@gmail.com",
+  freeShippingThreshold: 800,
+  currency: "R",
+};
+
+const PRODUCTS = [
+  { id: "newborn", title: "Newborn (Size 0–1)", price: 229, pack: "24 nappies / pack", img: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1200&auto=format&fit=crop&q=80" },
+  { id: "midi", title: "Midi (Size 2–3)", price: 249, pack: "44 nappies / pack", img: "https://images.unsplash.com/photo-1580476262798-bddd9f4b7369?w=1200&auto=format&fit=crop&q=80" },
+  { id: "maxi", title: "Maxi (Size 4–5)", price: 269, pack: "48 nappies / pack", img: "https://images.unsplash.com/photo-1543351611-58f69d7c1783?w=1200&auto=format&fit=crop&q=80" },
+  { id: "junior", title: "Junior (Size 6)", price: 289, pack: "38 nappies / pack", img: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200&auto=format&fit=crop&q=80" },
+];
+
+function formatZAR(n) { return `${STORE.currency}${n.toLocaleString("en-ZA", { minimumFractionDigits: 0 })}`; }
+
+export default function CuddlebumShop() {
+  const [cart, setCart] = useState([]);
+  const [openCart, setOpenCart] = useState(false);
+  const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
+
+  useEffect(() => {
+    try { const saved = JSON.parse(localStorage.getItem("cuddlebum-cart") || "[]"); setCart(saved); } catch {} 
+  }, []);
+  useEffect(() => { localStorage.setItem("cuddlebum-cart", JSON.stringify(cart)); }, [cart]);
+
+  const map = useMemo(() => Object.fromEntries(PRODUCTS.map(p => [p.id, p])), []);
+  const total = useMemo(() => cart.reduce((sum, item) => sum + map[item.id].price * item.qty, 0), [cart, map]);
+
+  function addToCart(id) { setCart(c => { const idx = c.findIndex(i => i.id === id); if (idx === -1) return [...c, { id, qty: 1 }]; const next = [...c]; next[idx] = { ...next[idx], qty: next[idx].qty + 1 }; return next; }); setOpenCart(true); }
+  function changeQty(id, delta) { setCart(c => { const idx = c.findIndex(i => i.id === id); if (idx === -1) return c; const next = [...c]; const q = Math.max(0, next[idx].qty + delta); if (q === 0) return next.filter(i => i.id !== id); next[idx] = { ...next[idx], qty: q }; return next; }); }
+  function clearCart() { setCart([]); }
+
+  function toWhatsAppCheckout() {
+    if (!cart.length) return;
+    const lines = cart.map(({ id, qty }) => `• ${map[id].title} x ${qty} = ${formatZAR(map[id].price * qty)}`);
+    const message = `Hi ${STORE.name}! I'd like to order:\n${lines.join("\n")}\n\nName: ${name}\nDelivery Address: ${address}\nTotal: ${formatZAR(total)}`;
+    const url = `https://wa.me/${STORE.ownerWhatsApp.replace(/[^\d]/g, "")}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank");
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800">
+      <header className="sticky top-0 z-40 backdrop-blur bg-white/70 border-b border-slate-200/60 p-4 flex justify-between items-center">
+        <h1 className="font-extrabold text-xl">{STORE.name}</h1>
+        <button onClick={() => setOpenCart(true)} className="relative px-3 py-2 border rounded-xl">🛒 Cart ({cart.reduce((a,b)=>a+b.qty,0)})</button>
+      </header>
+
+      <section className="py-12 max-w-7xl mx-auto px-4">
+        <h2 className="text-3xl font-bold mb-6">Shop Nappies</h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {PRODUCTS.map(p => (
+            <div key={p.id} className="bg-white p-4 rounded-2xl shadow">
+              <img src={p.img} alt={p.title} className="w-full h-32 object-cover rounded-xl mb-2" />
+              <h3 className="font-semibold">{p.title}</h3>
+              <p className="text-sm text-slate-500">{p.pack}</p>
+              <p className="mt-1 font-bold">{formatZAR(p.price)}</p>
+              <button onClick={()=>addToCart(p.id)} className="mt-2 w-full px-3 py-2 bg-rose-500 text-white rounded-2xl">Add to Cart</button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="cart" className="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl p-6 transform transition-transform ${openCart ? 'translate-x-0' : 'translate-x-full'}">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-bold text-lg">Your Cart</h3>
+          <button onClick={()=>setOpenCart(false)}>✕</button>
+        </div>
+        {cart.length === 0 ? <p>Your cart is empty.</p> : (
+          <ul className="space-y-3 mb-4">
+            {cart.map(({id,qty}) => (
+              <li key={id} className="flex justify-between items-center">
+                <div>{map[id].title} x {qty}</div>
+                <div className="flex gap-1">
+                  <button onClick={()=>changeQty(id,-1)} className="px-2 border rounded">−</button>
+                  <button onClick={()=>changeQty(id,1)} className="px-2 border rounded">+</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="mb-4">
+          <input placeholder="Name" value={name} onChange={e=>setName(e.target.value)} className="w-full mb-2 p-2 border rounded" />
+          <textarea placeholder="Delivery Address" value={address} onChange={e=>setAddress(e.target.value)} className="w-full p-2 border rounded" rows={3}></textarea>
+        </div>
+        <button onClick={toWhatsAppCheckout} className="w-full px-4 py-3 bg-emerald-500 text-white rounded-2xl">WhatsApp Checkout</button>
+        <button onClick={clearCart} className="mt-2 w-full px-4 py-2 border rounded">Clear Cart</button>
+      </section>
+    </div>
+  );
+}
+ items-center">
+                <div>{map[id].title} x {qty}</div>
+                <div className="flex gap-1">
+                  <button onClick={()=>changeQty(id,-1)} className="px-2 border rounded">−</button>
+                  <button onClick={()=>changeQty(id,1)} className="px-2 border rounded">+</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
